@@ -18,5 +18,5 @@ export default function App() {
         defaultErrorHandler: false,
     });
     
-    app.listen(process.env.PORT || 3000);
+    app.listen(process.env.PORT || 3000, process.env.IP || '127.0.0.1');
 }

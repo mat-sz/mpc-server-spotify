@@ -12,14 +12,11 @@ const scopes = [
     'playlist-modify-private',
     'user-read-recently-played',
 ];
-const clientId = process.env.SPOTIFY_CLIENT_ID;
-const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-const redirectUri = process.env.REDIRECT_URI;
 
 export const createSpotify = () => new SpotifyWebApi({
-    clientId,
-    clientSecret,
-    redirectUri,
+    clientId: process.env.SPOTIFY_CLIENT_ID,
+    clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+    redirectUri: process.env.REDIRECT_URI,
 });
 
 export const createAuthorizeUrl = (key: string) => {
