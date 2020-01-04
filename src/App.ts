@@ -8,6 +8,7 @@ import { ErrorHandler } from './middleware/ErrorHandler';
 
 export default function App() {
     const app = createExpressServer({
+        cors: true,
         controllers: [
             AuthenticationController,
             CapabilitiesController,
