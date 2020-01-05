@@ -60,21 +60,26 @@ export class AuthenticationController {
                 response.redirect(pendingAuth.redirectUri);
             }
         } else {
-            let spotify = createSpotify();
-            const grant = await spotify.authorizationCodeGrant(code);
+            try {
+                let spotify = createSpotify();
 
-            if (!grant || !grant.body.access_token) {
+                const grant = await spotify.authorizationCodeGrant(code);
+    
+                if (!grant || !grant.body.access_token) {
+                    pendingAuth.state = 'failed';
+                } else {
+                    pendingAuth.state = 'successful';
+        
+                    const date = new Date();
+                    date.setTime(date.getTime() + grant.body.expires_in * 1000);
+        
+                    // Doing this to make sure the tokens get cached.
+                    spotify = await createAuthenticatedSpotify(grant.body.refresh_token, grant.body.access_token, date);
+                }
+            } catch {
                 pendingAuth.state = 'failed';
-            } else {
-                pendingAuth.state = 'successful';
-    
-                const date = new Date();
-                date.setTime(date.getTime() + grant.body.expires_in * 1000);
-    
-                // Doing this to make sure the tokens get cached.
-                spotify = await createAuthenticatedSpotify(grant.body.refresh_token, grant.body.access_token, date);
             }
-
+    
             if (pendingAuth.redirectUri) {
                 response.redirect(pendingAuth.redirectUri);
             }
