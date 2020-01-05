@@ -32,16 +32,39 @@ export const createAuthenticatedSpotify = async (refreshToken: string, accessTok
     const spotify = createSpotify();
     
     let token = tokens.get(refreshToken);
-    if (!token && accessToken && expiresAt) {
-        token = {
-            refreshToken,
-            accessToken,
-            expiresAt,
-            createdAt: new Date(),
-        };
-        tokens.set(refreshToken, token);
-    } else {
-        return null;
+    if (!token) {
+        if (accessToken && expiresAt) {
+            token = {
+                refreshToken,
+                accessToken,
+                expiresAt,
+                createdAt: new Date(),
+            };
+            
+            tokens.set(refreshToken, token);
+        } else {
+            spotify.setRefreshToken(refreshToken);
+    
+            const date = new Date();
+
+            try {
+                const refresh = await spotify.refreshAccessToken();
+
+                const newAccessToken = refresh.body.access_token;
+                spotify.setAccessToken(newAccessToken);
+        
+                date.setTime(date.getTime() + refresh.body.expires_in * 1000)
+        
+                token = {
+                    accessToken: newAccessToken,
+                    refreshToken,
+                    expiresAt: date,
+                    createdAt: new Date(),
+                };
+            } catch {
+                return null;
+            }
+        }
     }
 
     spotify.setAccessToken(token.accessToken);
@@ -49,14 +72,18 @@ export const createAuthenticatedSpotify = async (refreshToken: string, accessTok
 
     const date = new Date();
     if (date.getTime() > token.expiresAt.getTime()) {
-        const refresh = await spotify.refreshAccessToken();
-        const newAccessToken = refresh.body.access_token;
-        spotify.setAccessToken(newAccessToken);
+        try {
+            const refresh = await spotify.refreshAccessToken();
+            const newAccessToken = refresh.body.access_token;
+            spotify.setAccessToken(newAccessToken);
 
-        token.accessToken = newAccessToken;
+            token.accessToken = newAccessToken;
 
-        date.setTime(date.getTime() + refresh.body.expires_in * 1000)
-        token.expiresAt = date;
+            date.setTime(date.getTime() + refresh.body.expires_in * 1000)
+            token.expiresAt = date;
+        } catch {
+            return null;
+        }
     }
 
     return spotify;
