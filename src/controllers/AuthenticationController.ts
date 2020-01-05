@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Controller, QueryParam, Get, Post, Redirect, Req, Res, BodyParam } from 'routing-controllers';
-import { createSpotify, createAuthorizeUrl } from '../Spotify';
+import { createSpotify, createAuthorizeUrl, createAuthenticatedSpotify } from '../Spotify';
 import uuid from 'uuid/v4';
 
 interface PendingAuthenticationModel {
@@ -55,13 +55,35 @@ export class AuthenticationController {
 
         if (error || !code) {
             pendingAuth.state = 'failed';
-            return 'end';
+            
+            if (pendingAuth.redirectUri) {
+                response.redirect(pendingAuth.redirectUri);
+            }
         } else {
-            const spotify = createSpotify();
+            let spotify = createSpotify();
             const grant = await spotify.authorizationCodeGrant(code);
 
-            return grant;
+            if (!grant || !grant.body.access_token) {
+                pendingAuth.state = 'failed';
+            } else {
+                pendingAuth.state = 'successful';
+    
+                const date = new Date();
+                date.setTime(date.getTime() + grant.body.expires_in * 1000);
+    
+                // Doing this to make sure the tokens get cached.
+                spotify = await createAuthenticatedSpotify(grant.body.refresh_token, grant.body.access_token, date);
+            }
+
+            if (pendingAuth.redirectUri) {
+                response.redirect(pendingAuth.redirectUri);
+            }
         }
+
+        response.contentType('html');
+        return `<script>
+        window.close();
+        </script>`;
     }
 
     @Get('/auth/state')
