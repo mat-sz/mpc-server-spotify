@@ -1,12 +1,15 @@
 import { Request, Response } from 'express';
 import { Controller, QueryParam, Get, Post, Redirect, Req, Res, BodyParam } from 'routing-controllers';
-import { createSpotify, createAuthorizeUrl, createAuthenticatedSpotify } from '../Spotify';
 import uuid from 'uuid/v4';
+import jwt from 'jsonwebtoken';
+
+import { createSpotify, createAuthorizeUrl, createAuthenticatedSpotify } from '../Spotify';
 
 interface PendingAuthenticationModel {
     key: string,
     createdAt: Date,
     state: 'incomplete' | 'successful' | 'failed',
+    token?: string,
     redirectUri?: string,
 };
 
@@ -69,6 +72,7 @@ export class AuthenticationController {
                     pendingAuth.state = 'failed';
                 } else {
                     pendingAuth.state = 'successful';
+                    pendingAuth.token = jwt.sign({ refreshToken: grant.body.refresh_token }, process.env.JWT_SECRET);
         
                     const date = new Date();
                     date.setTime(date.getTime() + grant.body.expires_in * 1000);
@@ -96,12 +100,18 @@ export class AuthenticationController {
         const pendingAuth = pending.find((auth) => auth.key == key);
 
         if (!pendingAuth) throw new Error('Not found.');
+
+        let data: any = {
+            state: pendingAuth.state,
+        };
+
+        if (pendingAuth.state === 'successful' && pendingAuth.token) {
+            data.token = pendingAuth.token;
+        }
         
         return {
             success: true,
-            data: {
-                state: pendingAuth.state,
-            }
+            data,
         };
     }
 
