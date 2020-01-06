@@ -1,11 +1,16 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { ExpressMiddlewareInterface, HttpError } from 'routing-controllers';
+import SpotifyWebApi from 'spotify-web-api-node';
 import jwt from 'jsonwebtoken';
 
 import { createAuthenticatedSpotify } from '../Spotify';
 
+export interface CustomRequest extends Request {
+    spotify?: SpotifyWebApi,
+};
+
 export class AuthenticationMiddleware implements ExpressMiddlewareInterface {
-    async use(request: any, response: Response, next?: (err?: any) => any) {
+    async use(request: CustomRequest, response: Response, next?: (err?: any) => any) {
         if (request.headers['authorization']) {
             const split = request.headers['authorization'].split(' ');
             const token = split[split.length - 1];

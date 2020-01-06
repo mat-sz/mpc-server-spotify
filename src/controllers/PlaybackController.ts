@@ -1,13 +1,12 @@
 import { Controller, QueryParam, Get, Post, UseBefore, Req } from 'routing-controllers';
-import { AuthenticationMiddleware } from '../middleware/AuthenticationMiddleware';
-import SpotifyWebApi = require('spotify-web-api-node');
+import { AuthenticationMiddleware, CustomRequest } from '../middleware/AuthenticationMiddleware';
 
 @Controller()
 @UseBefore(AuthenticationMiddleware)
 export class PlaybackController {
     @Get('/playback')
-    async index(@Req() request: any) {
-        const spotify: SpotifyWebApi = request.spotify;
+    async index(@Req() request: CustomRequest) {
+        const spotify = request.spotify;
 
         const track = await spotify.getMyCurrentPlayingTrack();
         let data: any = {};
@@ -56,8 +55,8 @@ export class PlaybackController {
     }
 
     @Post('/playback/next')
-    async next(@Req() request: any) {
-        const spotify: SpotifyWebApi = request.spotify;
+    async next(@Req() request: CustomRequest) {
+        const spotify = request.spotify;
         await spotify.skipToNext();
 
         return {
@@ -66,8 +65,8 @@ export class PlaybackController {
     }
 
     @Post('/playback/previous')
-    async previous(@Req() request: any) {
-        const spotify: SpotifyWebApi = request.spotify;
+    async previous(@Req() request: CustomRequest) {
+        const spotify = request.spotify;
         await spotify.skipToNext();
 
         return {
