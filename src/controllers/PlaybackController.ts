@@ -14,29 +14,34 @@ export class PlaybackController {
         const item = track.body.item;
         
         data.playback = {
-            active: track.body.is_playing,
+            active: false,
         };
 
         if (track.body.is_playing) {
+            data.playback.active = true;
             data.playback.progress = track.body.progress_ms;
             data.playback.duration = item.duration_ms;
         }
 
-        data.track = {
-            id: item.id,
-            name: item.name,
-            artistName: item.artists.reduce((string, value, i) =>
-                string + (i > 0 ? ", " : "") + value.name
-            , ""),
-            duration: item.duration_ms,
-        };
+        if (item) {
+            data.track = {
+                id: item.id,
+                name: item.name,
+                artistName: item.artists.reduce((string, value, i) =>
+                    string + (i > 0 ? ", " : "") + value.name
+                , ""),
+                duration: item.duration_ms,
+            };
+    
+            if (item.album) {
+                data.album = {
+                    id: item.album.id,
+                    name: item.album.name,
+                };
+            }
+        }
 
-        data.album = {
-            id: item.album.id,
-            name: item.album.name,
-        };
-
-        if (track.body.context.type === 'playlist') {
+        if (track.body.context && track.body.context.type === 'playlist') {
             const playlistId = track.body.context.uri.split(':').slice(-1)[0];
             const playlist = await spotify.getPlaylist(playlistId, {
                 fields: 'name',
